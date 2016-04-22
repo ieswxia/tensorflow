@@ -616,10 +616,10 @@ def zeros(shape, dtype=dtypes.float32, name=None):
     A `Tensor` with all elements set to zero.
   """
   with ops.op_scope([shape], name, "zeros") as name:
-    if isinstance(shape, list):
+    if isinstance(shape, (list, tuple)):
       output = constant(0, shape=shape, dtype=dtype, name=name)
     else:
-      shape = ops.convert_to_tensor(shape, name="shape")
+      shape = ops.convert_to_tensor(shape, dtype=dtypes.int32, name="shape")
       output = fill(shape, constant(0, dtype=dtype), name=name)
   assert output.dtype.base_dtype == dtypes.as_dtype(dtype).base_dtype
   return output
@@ -712,10 +712,10 @@ def ones(shape, dtype=dtypes.float32, name=None):
     A `Tensor` with all elements set to 1.
   """
   with ops.op_scope([shape], name, "ones") as name:
-    if isinstance(shape, list):
+    if isinstance(shape, (list, tuple)):
       output = constant(1, shape=shape, dtype=dtype, name=name)
     else:
-      shape = ops.convert_to_tensor(shape, name="shape")
+      shape = ops.convert_to_tensor(shape, dtype=dtypes.int32, name="shape")
       output = fill(shape, constant(1, dtype=dtype), name=name)
   assert output.dtype.base_dtype == dtypes.as_dtype(dtype).base_dtype
   return output
@@ -844,6 +844,7 @@ def _PlaceholderShape(op):
 @ops.RegisterShape("Identity")
 @ops.RegisterShape("RefIdentity")
 @ops.RegisterShape("StopGradient")
+@ops.RegisterShape("BatchMatrixBandPart")
 def _UnchangedShape(op):
   return [op.inputs[0].get_shape()]
 
@@ -967,21 +968,18 @@ def _DiagPartShape(op):
     A single-element list containing the shape of the output.
 
   Raises:
-    ValueError: If input has odd rank or greater than 6
+    ValueError: If input has odd rank or greater than 6, or the first and
+    second halves of the shape are incompatible.
 
   """
-  shape = op.inputs[0].get_shape()
-  rank = len(shape)
+  input_shape = op.inputs[0].get_shape().with_rank_at_most(6)
+  rank = input_shape.ndims
+  if rank is None:
+    return [tensor_shape.unknown_shape()]
+  if rank % 2:
+    raise ValueError("Input must be even rank, got rank = " + str(rank) + ".")
   mid = rank // 2
-  if rank % 2 or rank > 6:
-    raise ValueError("Input must have even rank <= 6, input rank is " +
-                     str(rank) + "." )
-  if shape[:mid] != shape[mid:]:
-    raise ValueError("Invalid shape, shape[:mid] " + str(shape[:mid]) +
-                     " and shape[mid:] " + str(shape[mid:]) +
-                     " do not match ")
-  input_shape = shape.with_rank_at_most(6)
-  return [input_shape[:len(input_shape) // 2]]
+  return [input_shape[:mid].merge_with(input_shape[mid:])]
 
 @ops.RegisterShape("ExpandDims")
 def _ExpandDimsShape(op):

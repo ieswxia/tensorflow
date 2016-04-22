@@ -27,6 +27,7 @@ py_library(
         "//tensorflow/contrib/tensor_forest:tensor_forest_py",
         "//tensorflow/contrib/testing:testing_py",
         "//tensorflow/contrib/util:util_py",
+        "//tensorflow/contrib/copy_graph:copy_graph_py",
     ],
 )
 
@@ -35,6 +36,14 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//tensorflow/contrib/linear_optimizer:sdca_op_kernels",
+    ],
+)
+
+cc_library(
+    name = "contrib_ops_op_lib",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//tensorflow/contrib/linear_optimizer:sdca_ops_op_lib",
     ],
 )
 

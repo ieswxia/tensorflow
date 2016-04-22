@@ -767,6 +767,7 @@ class CollectionTest(test_util.TensorFlowTestCase):
     self.assertEqual([], g.get_collection("nothing"))
     self.assertEqual([27, blank1, blank2], g.get_collection("blah"))
     self.assertEqual([blank1], g.get_collection("blah", "prefix"))
+    self.assertEqual([blank1], g.get_collection("blah", ".*x"))
 
     # Make sure that get_collection() returns a first-level
     # copy of the collection, while get_collection_ref() returns
@@ -1279,7 +1280,7 @@ class ColocationGroupTest(test_util.TensorFlowTestCase):
       with ops.device("/gpu:0"):
         a = constant_op.constant([2.0], name="a")
       with ops.colocate_with(a.op):
-        # 'b' is created in the scope of /cpu:0, but but it is
+        # 'b' is created in the scope of /cpu:0, but it is
         # colocated with 'a', which is on '/gpu:0'.  colocate_with
         # overrides devices because it is a stronger constraint.
         b = constant_op.constant(3.0)
